@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/sms_from"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:text="From" />
+    <TextView
+        android:id="@+id/sms_from_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginLeft="15dp"
+        android:layout_toRightOf="@id/sms_from"/>
+    <TextView
+        android:id="@+id/sms_content"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_below="@id/sms_from"
+        android:layout_marginTop="20dp"
+        android:text="Content" />
+    <TextView
+        android:id="@+id/sms_content_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="20dp"
+        android:layout_below="@id/sms_from_txt"
+        android:layout_toRightOf="@id/sms_content"/>
+    <?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/color_666666">
+        <Button
+            android:id="@+id/btn_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="启动"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/dimen_20"
+            android:padding="@dimen/dimen_10"
+            android:textSize="@dimen/text_size_18"
+            android:textColor="@color/white"
+            android:background="@color/color_188FFF"/>
+        <ImageView
+            android:id="@+id/iv_image"
+            android:layout_width="match_parent"
+            android:layout_marginTop="@dimen/dimen_20"
+            android:layout_gravity="center_horizontal"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+</RelativeLayout>
+
+    MainActivity.java文件
+
+    public class MainActivity extends AppCompatActivity {
+    private TextView fromTv;
+    private TextView contentTv;
+
+    private IntentFilter intentFilter;
+    private MessageReceiver messageReceiver;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    initView();
+    getSms();
+    }
+
+    private void getSms() {
+    intentFilter = new IntentFilter();                 intentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
+    messageReceiver = new MessageReceiver();
+    //设置较高的优先级
+    intentFilter.setPriority(100);
+    registerReceiver(messageReceiver, intentFilter);
+    }
+
+    private void initView() {
+    fromTv = (TextView) findViewById(R.id.sms_from_txt);
+    contentTv = (TextView) findViewById(R.id.sms_content_txt);
+    }
+
+    @Override
+    protected void onDestroy() {
+    super.onDestroy();
+    unregisterReceiver(messageReceiver);
+    }
+
+    class MessageReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+    Bundle bundle = intent.getExtras();
+    //提取短信消息
+    Object[] pdus = (Object[]) bundle.get("pdus");
+    SmsMessage[] messages = new SmsMessage[pdus.length];
+    for (int i = 0; i < messages.length; i++) {
+    messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+    }
+    //获取发送方号码
+    String address = messages[0].getOriginatingAddress();
+
+    String fullMessage = "";
+    for (SmsMessage message : messages) {
+    //获取短信内容
+    fullMessage += message.getMessageBody();
+    }
+    //截断广播,阻止其继续被Android自带的短信程序接收到
+    abortBroadcast();
+    fromTv.setText(address);
+    contentTv.setText(fullMessage);
+    }
+    }
+    }

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <EditText
+        android:id="@+id/to_ed"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="to"/>
+    <EditText
+        android:id="@+id/to_content"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/to_ed"
+        android:hint="content"/>
+    <Button
+        android:id="@+id/send_msg"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/to_content"
+        android:text="@string/send_message"/>
+</RelativeLayout>
+
+    SendMsgActivity.java文件
+
+    public class SendMsgActivity extends AppCompatActivity implements View.OnClickListener {
+    private Context context;
+    private EditText toEdit;
+    private EditText toContent;
+    private IntentFilter sendFilter;
+    private SendStatusReceiver sendStatusReceiver;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_send_msg);
+    context = this;
+    initView();
+    }
+
+    private void initView() {
+    toEdit = (EditText) findViewById(R.id.to_ed);
+    toContent = (EditText) findViewById(R.id.to_content);
+    //添加发送按钮的点击监听事件
+    Button sendMsg = (Button) findViewById(R.id.send_msg);
+    sendMsg.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View view) {
+    switch (view.getId()){
+    case R.id.send_msg:
+    sendMessage();
+    break;
+    default:
+    break;
+    }
+    }
+
+    private void sendMessage() {
+    //获取短信接收者号码
+    String to = toEdit.getText().toString();
+    //获取发送短信内容
+    String content = toContent.getText().toString();
+    //获得广播接收器实例和IntentFilter实例
+    sendStatusReceiver = new SendStatusReceiver();
+    sendFilter = new IntentFilter();
+    sendFilter.addAction("SENT_SMS_ACTION");
+    //注册广播监听
+    registerReceiver(sendStatusReceiver, sendFilter);
+    //构造PendingIntent启动短信发送状态监控广播
+    Intent sendIntent = new Intent("SENT_SMS_ACTION");
+    PendingIntent pi = PendingIntent.getBroadcast(context, 0, sendIntent, 0);
+    //获得短信管理实例
+    SmsManager smsManager = SmsManager.getDefault();
+
+    //调用发送短信函数，传入参数发送短信(第一、三、四参数依次为接收者号码,短信内容,短信发送状态监控的PendingIntent)
+    smsManager.sendTextMessage(to, null, content, pi, null);
+    }
+
+    /**
+    * 构造广播接收器内部类监控短信是否发送成功
+    */
+    class SendStatusReceiver extends BroadcastReceiver{
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+    if (getResultCode() == RESULT_OK){
+    Toast.makeText(context, "successful", Toast.LENGTH_SHORT).show();
+    }else{
+    Toast.makeText(context, "failed", Toast.LENGTH_SHORT).show();
+    }
+    }
+    }
+
+    @Override
+    protected void onDestroy() {
+    super.onDestroy();
+    //取消注册的广播
+    unregisterReceiver(sendStatusReceiver);
+    }
+    }
